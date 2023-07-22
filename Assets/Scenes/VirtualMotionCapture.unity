@@ -301,7 +301,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &130023280
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1002,18 +1002,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c6fd25003140c0e47b39261ea2e0f470, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  MonitorPosition: {fileID: 0}
-  LookTarget: {fileID: 0}
-  StartPos: {x: 0, y: 0, z: 0}
-  ScaleX: 0.5
-  ScaleY: 0.2
-  OffsetX: 0
-  OffsetY: 0
-  CenterX: 0.5
-  CenterY: 0.5
-  Smoothing: 0.7
-  controlWPFWindow: {fileID: 1407685704}
-  faceController: {fileID: 69806225}
 --- !u!4 &326004793
 Transform:
   m_ObjectHideFlags: 0
@@ -1068,6 +1056,49 @@ MonoBehaviour:
   EnableEye: 1
   EnableEyeDataCallback: 0
   EnableEyeVersion: 0
+--- !u!1 &362287670
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 362287671}
+  - component: {fileID: 362287672}
+  m_Layer: 0
+  m_Name: SlimeVRTrackerManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &362287671
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 362287670}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children: []
+  m_Father: {fileID: 1962200053}
+  m_RootOrder: 2
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &362287672
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 362287670}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 30dd2d80841a9fe45936154cc382d6d9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &389263777
 GameObject:
   m_ObjectHideFlags: 0
@@ -3404,9 +3435,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b2f7a0c5fd055af4083cbe934b512f19, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  controlWPFWindow: {fileID: 1407685704}
-  modManager: {fileID: 755659414}
-  sdkConfiguration: {fileID: 11400000, guid: dd276808621df4e2380660ade912baf3, type: 2}
 --- !u!4 &1770264196
 Transform:
   m_ObjectHideFlags: 0
@@ -3567,6 +3595,7 @@ Transform:
   m_Children:
   - {fileID: 1405842123}
   - {fileID: 210973286}
+  - {fileID: 362287671}
   m_Father: {fileID: 0}
   m_RootOrder: 14
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}

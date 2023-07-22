@@ -25,7 +25,7 @@ namespace VMC
 
         private void Start()
         {
-            Setup();
+            //Setup();
         }
 
         private bool Setup()

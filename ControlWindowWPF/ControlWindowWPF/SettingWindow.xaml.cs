@@ -979,7 +979,7 @@ namespace VirtualMotionCaptureControlPanel
 
         private async void RestartSteamVRandVirtualMotionCapture()
         {
-            System.Diagnostics.Process.Start("vrmonitor://restartsystem");
+            //System.Diagnostics.Process.Start("vrmonitor://restartsystem");
 
             while (VMCisAlive)
             {

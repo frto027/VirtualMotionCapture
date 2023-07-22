@@ -1,3 +1,57 @@
+# 改造说明
+
+PS： 好的，我们在这里引入一个中文的说明文档23333333333333。
+
+一个一个的package导入进来，终于是把VMC成功编译出来了。为了能在游玩BeatSaber时提供更高的性能，我对VMC的连接方式进行了一些改造。
+
+## 改造前
+
+It's a joke, but the delay is real.
+
+![别搁这叠buff了](the_terrible_buff.png)
+
+我们来细数改造前的程序：
+- Oculus Link 用于Quest设备连接pc
+- SteamVR 作为Oculus Link中的一个app常驻
+- BeatSaber 在SteamVR中启动BeatSaber游戏
+- SlimeVR Server 一个独立的Java应用程序，提供SlimeVR传感器的连接、计算以及信号转发
+- SlimeVR Feeder App 一个SteamVR插件，将头显（及/或控制器）的坐标发送给SlimeVR Server
+- SlimeVR OpenVR Driver 一个SteamVR插件，将SlimeVR Server计算出来的坐标接收，并告知SteamVR系统，模拟tracker
+- Vitrual Motion Capture 一个独立的开源SteamVR应用程序，获取tracker并计算模型坐标，以Unity默认帧率渲染一个模型，Fanbox付费版本可以发送骨骼数据
+- VMCAvatar-BS 一个闭源BeatSaber插件，接收从Vitrual Motion Capture计算得到的骨骼数据，显示在游戏里面
+
+数据发送接收情况如下：
+
+- SteamVR：(SlimeVR FeederApp)发送头显坐标，(SlimeVR Driver)接收Tracker坐标
+- SlimeVR Server：与SteamVR交互，计算坐标
+- SteamVR：发送Tracker坐标
+- Virtual Motion Capture：接收Tracker坐标，渲染模型，（仅Fanbox版本）发送骨骼数据
+- BeatSaber：（VMCAvatar-BS模组）接收骨骼数据，渲染模型
+
+那么，我们要在游戏里走这一套显示模型，需要：
+SteamVR --头显坐标--> SlimeVRServer --Tracker坐标--> (SteamVR|BeatSaber游戏) --Tracker坐标--> VMC --骨骼坐标--> BeatSaber游戏
+
+## 改造后
+
+完全剥离了SteamVR，游戏以Oculus Native的形式直接运行（主要目标）。把上面那张图里面的SteamVR去掉，再看看。
+
+我做了这些插件：
+- Virtual Motion Capture直连SlimeVR驱动，获取SlimeVR传感器数据，取代SlimeVR OpenVR Driver。需要卸载这个Driver或者不要开启SteamVR，不然会冲突。传感器数据可以少走一圈SteamVR，和VMCProtocol类似，但使用的是SlimeVR对接SteamVR的接口，少一次格式转换，坐标更准更灵活。
+- Virtual Motion Capture直连游戏Mod，获取头显、手柄坐标数据，取代SteamVR。
+- SlimeVR直连游戏Mod，获取头显、手柄坐标数据，取代SteamVR。
+
+---
+
+- 为了免受SteamVR打扰，我干掉了VMC中的SteamVR。
+
+现在，可以使用以下方式：
+
+BeatSaber：（VMCBridge4BS）发送头显、手柄坐标给VMC
+BeatSaber：（SlimeVRFeeder4BSOculus）发送头显、手柄坐标给SlimeVR
+VMC：（这个版本）从BeatSaber接收头显、手柄坐标，从SlimeVR接收传感器坐标
+BeatSaber：（VMCAvatar-BS）从VMC接收骨骼数据
+
+
 # バーチャルモーションキャプチャー (VirtualMotionCapture)  
 VRゲーム中にモデルをコントロール  
   
