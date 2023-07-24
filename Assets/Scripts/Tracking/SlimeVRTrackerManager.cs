@@ -11,6 +11,9 @@ public class SlimeVRTrackerManager : MonoBehaviour
 
     SlimeVRBridge slimeBridge,vmcBridge;
 
+
+    private bool closed = false;
+    private System.Threading.Thread serverThread;
     private void Awake()
     {
         Instance = this;
@@ -20,41 +23,52 @@ public class SlimeVRTrackerManager : MonoBehaviour
     void Start()
     {
         slimeBridge = SlimeVRBridge.getDriverInstance();
-        slime_vr_next_connect = 0;
+        slime_vr_next_connect = DateTime.Now;
 
         vmcBridge = SlimeVRBridge.getVMCInstance();
-        vmc_next_connect = 0;
+        vmc_next_connect = DateTime.Now;
+
+        serverThread = new System.Threading.Thread(() =>
+        {
+            while (!closed)
+            {
+                UpdateFrame();
+                System.Threading.Thread.Sleep(15);
+            }
+            slimeBridge.close();
+            vmcBridge.close();
+        });
+        serverThread.Start();
     }
 
     Messages.ProtobufMessage EmptyMessage = new Messages.ProtobufMessage();
     // Update is called once per frame
-    int slime_vr_next_connect = -1;
-    int vmc_next_connect = -1;
+    DateTime slime_vr_next_connect;
+    DateTime vmc_next_connect;
 
-    void Update()
+    void UpdateFrame()
     {
-        if(slime_vr_next_connect == 0)
+        DateTime now = DateTime.Now;
+
+         if (slime_vr_next_connect < now)
         {
             slimeBridge.connect();
-            slime_vr_next_connect = -1;
-        }else if(slime_vr_next_connect > 0)
-        {
-            slime_vr_next_connect--;
+            slime_vr_next_connect = DateTime.MaxValue;
         }
         bool slime_bridge_is_connected = slimeBridge.sendMessage(EmptyMessage) && slimeBridge.flush();
         if (!slime_bridge_is_connected)
         {
             slimeBridge.reset();
             //Debug.Log("slime bridge is not connected");
-            if (slime_vr_next_connect == -1)
-                slime_vr_next_connect = 60 * 3;
+            if (slime_vr_next_connect == DateTime.MaxValue)
+                slime_vr_next_connect = DateTime.Now.AddSeconds(3);
         }
         else
         {
             while (true)
             {
                 foreach (var t in slimeTrackers)
-                    if (t != null) t.isOK = false;
+                    if (t != null) t.isOK = (now - t.lastTime).TotalSeconds < 15;
                 Messages.ProtobufMessage message = slimeBridge.getNextMessage();
                 if (message == null)
                     break;
@@ -62,31 +76,26 @@ public class SlimeVRTrackerManager : MonoBehaviour
                     HandleTrackerPositionSlimeVR(message.Position);
                 else if (message.TrackerAdded != null)
                     HandleTrackerAddSlimeVR(message.TrackerAdded);
-
-                foreach (var t in slimeTrackers)
-                    if (t != null) TrackingPointManager.Instance.ApplyPoint(t.name, t.deviceType, t.Position, t.Rotation, t.isOK);
             }
         }
 
-        if(vmc_next_connect == 0)
+        if (vmc_next_connect < now)
         {
             vmcBridge.connect();
-        }else if(vmc_next_connect > 0)
-        {
-            vmc_next_connect--;
+            vmc_next_connect = DateTime.MaxValue;
         }
 
         bool vmc_bridge_is_connected = vmcBridge.sendMessage(EmptyMessage) && vmcBridge.flush();
         if (!vmc_bridge_is_connected)
         {
             //Debug.Log("vmc bridge is not connected");
-            if (vmc_next_connect == -1)
-                vmc_next_connect = 60 * 3;
+            if (vmc_next_connect == DateTime.MaxValue)
+                vmc_next_connect = DateTime.Now.AddSeconds(3);
         }
         else
         {
             foreach (var t in vmcTrackers)
-                if (t != null) t.isOK = false;
+                if (t != null) t.isOK = (now - t.lastTime).TotalSeconds < 3;
             while (true)
             {
                 Messages.ProtobufMessage message = vmcBridge.getNextMessage();
@@ -97,9 +106,16 @@ public class SlimeVRTrackerManager : MonoBehaviour
                 else if (message.TrackerAdded != null)
                     HandleTrackerAddVMC(message.TrackerAdded);
             }
-            foreach (var t in vmcTrackers)
-                if (t != null) TrackingPointManager.Instance.ApplyPoint(t.name, t.deviceType, t.Position, t.Rotation, t.isOK);
         }
+    }
+
+    private void Update()
+    {
+        foreach (var t in slimeTrackers)
+            if (t != null && t.isOK) TrackingPointManager.Instance.ApplyPoint(t.name, t.deviceType, t.Position, t.Rotation, true);
+
+        foreach (var t in vmcTrackers)
+            if (t != null && t.isOK) TrackingPointManager.Instance.ApplyPoint(t.name, t.deviceType, t.Position, t.Rotation, true);
     }
 
     class SlimeVRTrackerInfo
@@ -109,6 +125,8 @@ public class SlimeVRTrackerManager : MonoBehaviour
         public Quaternion Rotation;
         public string name;
         public Valve.VR.ETrackedDeviceClass deviceType;
+
+        public DateTime lastTime;
     }
 
     SlimeVRTrackerInfo[] slimeTrackers = new SlimeVRTrackerInfo[20];
@@ -123,6 +141,7 @@ public class SlimeVRTrackerManager : MonoBehaviour
         trackerInfo.Position = new Vector3(position.X, position.Y, -position.Z);
         trackerInfo.Rotation = new Quaternion(-position.Qx, position.Qy, position.Qz, -position.Qw);
         trackerInfo.isOK = true;
+        trackerInfo.lastTime = DateTime.Now;
     }
 
     private void HandleTrackerPositionVMC(Position position)
@@ -135,6 +154,7 @@ public class SlimeVRTrackerManager : MonoBehaviour
         trackerInfo.Position = new Vector3(position.X, position.Y, position.Z);
         trackerInfo.Rotation = new Quaternion(position.Qx, position.Qy, position.Qz, position.Qw);
         trackerInfo.isOK = true;
+        trackerInfo.lastTime = DateTime.Now;
     }
 
     void HandleTrackerAddSlimeVR(Messages.TrackerAdded trackerAdded)
@@ -159,7 +179,7 @@ public class SlimeVRTrackerManager : MonoBehaviour
     }
     private void OnDestroy()
     {
-        slimeBridge.close();
-        vmcBridge.close();
+        closed = true;
+        serverThread.Join();
     }
 }
