@@ -230,6 +230,7 @@ sealed class NamedPipeBridge : SlimeVRBridge
             if (_written != sendBufferDataCount)
             {
                 UnityEngine.Debug.LogError($"pipe sent {_written}(expected {sendBufferDataCount})");
+                return false;
             }
             sendBufferDataCount = 0;
             return true;

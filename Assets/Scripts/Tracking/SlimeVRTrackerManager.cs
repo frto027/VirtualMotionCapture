@@ -20,20 +20,34 @@ public class SlimeVRTrackerManager : MonoBehaviour
     void Start()
     {
         slimeBridge = SlimeVRBridge.getDriverInstance();
-        slimeBridge.connect();
+        slime_vr_next_connect = 0;
 
         vmcBridge = SlimeVRBridge.getVMCInstance();
-        vmcBridge.connect();
+        vmc_next_connect = 0;
     }
 
     Messages.ProtobufMessage EmptyMessage = new Messages.ProtobufMessage();
     // Update is called once per frame
+    int slime_vr_next_connect = -1;
+    int vmc_next_connect = -1;
+
     void Update()
     {
+        if(slime_vr_next_connect == 0)
+        {
+            slimeBridge.connect();
+            slime_vr_next_connect = -1;
+        }else if(slime_vr_next_connect > 0)
+        {
+            slime_vr_next_connect--;
+        }
         bool slime_bridge_is_connected = slimeBridge.sendMessage(EmptyMessage) && slimeBridge.flush();
         if (!slime_bridge_is_connected)
         {
+            slimeBridge.reset();
             //Debug.Log("slime bridge is not connected");
+            if (slime_vr_next_connect == -1)
+                slime_vr_next_connect = 60 * 3;
         }
         else
         {
@@ -53,10 +67,21 @@ public class SlimeVRTrackerManager : MonoBehaviour
                     if (t != null) TrackingPointManager.Instance.ApplyPoint(t.name, t.deviceType, t.Position, t.Rotation, t.isOK);
             }
         }
+
+        if(vmc_next_connect == 0)
+        {
+            vmcBridge.connect();
+        }else if(vmc_next_connect > 0)
+        {
+            vmc_next_connect--;
+        }
+
         bool vmc_bridge_is_connected = vmcBridge.sendMessage(EmptyMessage) && vmcBridge.flush();
         if (!vmc_bridge_is_connected)
         {
             //Debug.Log("vmc bridge is not connected");
+            if (vmc_next_connect == -1)
+                vmc_next_connect = 60 * 3;
         }
         else
         {
@@ -117,11 +142,7 @@ public class SlimeVRTrackerManager : MonoBehaviour
         slimeTrackers[trackerAdded.TrackerId] = new SlimeVRTrackerInfo()
         {
             name = trackerAdded.TrackerSerial,
-            deviceType =
-            trackerAdded.TrackerRole == (int)SlimeVRBridge.SlimeVRPosition.Head ? Valve.VR.ETrackedDeviceClass.HMD :
-            trackerAdded.TrackerRole == (int)SlimeVRBridge.SlimeVRPosition.LeftController ? Valve.VR.ETrackedDeviceClass.Controller :
-            trackerAdded.TrackerRole == (int)SlimeVRBridge.SlimeVRPosition.RightController ? Valve.VR.ETrackedDeviceClass.Controller :
-                Valve.VR.ETrackedDeviceClass.GenericTracker
+            deviceType = Valve.VR.ETrackedDeviceClass.GenericTracker
         };
     }
     void HandleTrackerAddVMC(Messages.TrackerAdded trackerAdded)
@@ -130,7 +151,7 @@ public class SlimeVRTrackerManager : MonoBehaviour
         {
             name = trackerAdded.TrackerSerial,
             deviceType =
-            trackerAdded.TrackerRole == (int)SlimeVRBridge.SlimeVRPosition.Head ? Valve.VR.ETrackedDeviceClass.HMD :
+            trackerAdded.TrackerRole == (int)SlimeVRBridge.SlimeVRPosition.HMD ? Valve.VR.ETrackedDeviceClass.HMD :
             trackerAdded.TrackerRole == (int)SlimeVRBridge.SlimeVRPosition.LeftController ? Valve.VR.ETrackedDeviceClass.Controller :
             trackerAdded.TrackerRole == (int)SlimeVRBridge.SlimeVRPosition.RightController ? Valve.VR.ETrackedDeviceClass.Controller :
                 Valve.VR.ETrackedDeviceClass.GenericTracker
